@@ -22,5 +22,4 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.h")
 file(GLOB_RECURSE HEADERS "vendor/*.h")
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS}
-        include/tokenization.hpp)
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})

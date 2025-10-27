@@ -1,25 +1,7 @@
+#include "../include/common.hpp"
 #include "../include/tokenization.hpp"
-
-std::string tokenToASM(const std::vector<Token>& tokens) {
-    std::stringstream output;
-
-    output << "global _start\n_start:\n";
-    for (int i = 0; i < tokens.size(); i++) {
-        const auto& [tokenType,tokenValue] = tokens.at(i);
-        if (tokenType == TokenType::exit) {
-           if (i + 1 < tokens.size() && tokens.at(i + 1).type == TokenType::int_literal) {
-                if (i + 2 < tokens.size() && tokens.at(i + 2).type == TokenType::semicolon) {
-                    output << "    mov rax, 60\n";
-                    output << "    mov rdi, " << tokens.at(i + 1).value.value()
-                           << "\n";
-                    output << "    syscall";
-               }
-            }
-        }
-    }
-
-    return output.str();
-}
+#include "../include/parser.hpp"
+#include "../include/generation.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -46,12 +28,20 @@ int main(int argc, char* argv[]) {
     }
     Tokenizer tokenizer(std::move(content));
 
-    const std::vector<Token> things = tokenizer.tokenize();
+    std::vector<Token> things = tokenizer.tokenize();
+    Parser parser(std::move(things));
+
+    std::optional<ExitNode> tree = parser.parse();
+
+    if (!tree.has_value()) {
+        std::cerr << "No Exit statment found \n";
+        exit(EXIT_FAILURE);
+    }
 
     {
+        Generator generator(std::move(tree.value()));
         std::ofstream file("../out.asm");
-        std::cout << "tokens not working" << tokenToASM(things) << std::endl;
-        file << tokenToASM(things);
+        file << generator.generate();
     }
     std::cout << "I am checking things : "<< things.data() << std::endl;
 

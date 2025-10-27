@@ -1,8 +1,6 @@
 #pragma once
 
-#include "common.hpp"
-
-enum class TokenType { exit, int_literal, semicolon };
+enum class TokenType { exit, intLiteral, semicolon };
 
 struct Token {
     TokenType type;
@@ -42,7 +40,7 @@ class Tokenizer {
                     buffer.push_back(consume());
                 }
                 tokens.push_back(
-                    {.type = TokenType::int_literal, .value = buffer});
+                    {.type = TokenType::intLiteral, .value = buffer});
                 buffer.clear();
             } else if (peak().value() == ';') {
                 consume();
@@ -61,7 +59,7 @@ class Tokenizer {
     }
 
   private:
-    [[nodiscard]] std::optional<char> peak(const int ahead = 1) const {
+    [[nodiscard]] inline std::optional<char> peak(const int ahead = 1) const {
         if (m_index + ahead > m_src.length()) {
             return {};
         } else {
