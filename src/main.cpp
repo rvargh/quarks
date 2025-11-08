@@ -11,11 +11,12 @@ int main(int argc, char* argv[]) {
     //     return EXIT_FAILURE;
     // }
 
-    const char* filepath = "/home/darkknight/cpp/quarks/sample/test.qs";
+
 
     std::string content;
     /** inner scope to close the file once read is completed */
     {
+        const char* filepath = "/home/darkknight/cpp/quarks/sample/test.qs";
         std::ifstream fileIn(filepath);
         if (!fileIn) {
             std::cerr << "Failed to open kkkkfile \n";

@@ -1,6 +1,15 @@
 #pragma once
 
-enum class TokenType { exit, intLiteral, semicolon };
+enum class TokenType {
+    exit,
+    intLiteral,
+    semicolon,
+    openParanthesis,
+    closeParanthesis,
+    identifier,
+    assign,
+    equals
+};
 
 struct Token {
     TokenType type;
@@ -18,35 +27,45 @@ class Tokenizer {
         // e x i t   2 1 ;
         // 0 1 2 3 4 5 6 7
 
-        while (peak().has_value()) {
-            if (std::isalpha(peak().value())) {
-                buffer.push_back(consume());
-                while (peak().has_value() && std::isalnum(peak().value())) {
-                    buffer.push_back(consume());
+        while (peek().has_value()) {
+            if (std::isalpha(peek().value())) {
+                buffer.push_back(eat());
+                while (peek().has_value() && std::isalnum(peek().value())) {
+                    buffer.push_back(eat());
                 }
-
                 if (buffer == "exit") {
-                    tokens.push_back(
-                        {.type = TokenType::exit, .value = buffer});
+                    tokens.push_back({.type = TokenType::exit, .value = buffer});
+                    buffer.clear();
+                    continue;
+                } else if (buffer == "assign") {
+                    tokens.push_back({.type = TokenType::assign});
                     buffer.clear();
                     continue;
                 } else {
-                    std::cerr << "You messed up!" << std::endl;
-                    exit(EXIT_FAILURE);
+                    tokens.push_back({.type = TokenType::identifier, .value = buffer});
+                    buffer.clear();
                 }
-            } else if (std::isdigit(peak().value())) {
-                buffer.push_back(consume());
-                while (peak().has_value() && std::isdigit(peak().value())) {
-                    buffer.push_back(consume());
+            } else if (peek().value() == '(') {
+                eat();
+                tokens.push_back({.type = TokenType::openParanthesis});
+            } else if (peek().value() == ')') {
+                eat();
+                tokens.push_back({.type = TokenType::closeParanthesis});
+            } else if (std::isdigit(peek().value())) {
+                buffer.push_back(eat());
+                while (peek().has_value() && std::isdigit(peek().value())) {
+                    buffer.push_back(eat());
                 }
-                tokens.push_back(
-                    {.type = TokenType::intLiteral, .value = buffer});
+                tokens.push_back({.type = TokenType::intLiteral, .value = buffer});
                 buffer.clear();
-            } else if (peak().value() == ';') {
-                consume();
+            } else if (peek().value() == ';') {
+                eat();
                 tokens.push_back({.type = TokenType::semicolon});
-            } else if (std::isspace(peak().value())) {
-                consume();
+            } else if (peek().value() == '=') {
+                eat();
+                tokens.push_back({.type = TokenType::equals});
+            } else if (std::isspace(peek().value())) {
+                eat();
                 continue;
             } else {
                 std::cerr << "You messed up!" << std::endl;
@@ -59,15 +78,15 @@ class Tokenizer {
     }
 
   private:
-    [[nodiscard]] inline std::optional<char> peak(const int ahead = 1) const {
-        if (m_index + ahead > m_src.length()) {
+    [[nodiscard]] inline std::optional<char> peek(const int offset = 0) const {
+        if (m_index + offset >= m_src.length()) {
             return {};
         } else {
-            return m_src.at(m_index);
+            return m_src.at(m_index + offset);
         }
     }
 
-    char consume() {
+    char eat() {
         return m_src.at(m_index++);
     }
 
