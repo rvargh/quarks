@@ -32,19 +32,18 @@ int main(int argc, char* argv[]) {
     std::vector<Token> things = tokenizer.tokenize();
     Parser parser(std::move(things));
 
-    std::optional<ExitNode> tree = parser.parse();
+    std::optional<ProgramNode> program = parser.parseProgram();
 
-    if (!tree.has_value()) {
-        std::cerr << "No Exit statment found \n";
+    if (!program.has_value()) {
+        std::cerr << "Invalid program \n";
         exit(EXIT_FAILURE);
     }
 
     {
-        Generator generator(std::move(tree.value()));
+        Generator generator(std::move(program.value()));
         std::ofstream file("../out.asm");
-        file << generator.generate();
+        file << generator.generateProgram();
     }
-    std::cout << "I am checking things : "<< things.data() << std::endl;
 
     
     std::system("nasm -felf64 ../out.asm");

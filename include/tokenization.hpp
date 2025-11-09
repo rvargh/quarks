@@ -4,8 +4,8 @@ enum class TokenType {
     exit,
     intLiteral,
     semicolon,
-    openParanthesis,
-    closeParanthesis,
+    openParentheses,
+    closeParentheses,
     identifier,
     assign,
     equals
@@ -34,7 +34,8 @@ class Tokenizer {
                     buffer.push_back(eat());
                 }
                 if (buffer == "exit") {
-                    tokens.push_back({.type = TokenType::exit, .value = buffer});
+                    tokens.push_back(
+                        {.type = TokenType::exit, .value = buffer});
                     buffer.clear();
                     continue;
                 } else if (buffer == "assign") {
@@ -42,21 +43,23 @@ class Tokenizer {
                     buffer.clear();
                     continue;
                 } else {
-                    tokens.push_back({.type = TokenType::identifier, .value = buffer});
+                    tokens.push_back(
+                        {.type = TokenType::identifier, .value = buffer});
                     buffer.clear();
                 }
             } else if (peek().value() == '(') {
                 eat();
-                tokens.push_back({.type = TokenType::openParanthesis});
+                tokens.push_back({.type = TokenType::openParentheses});
             } else if (peek().value() == ')') {
                 eat();
-                tokens.push_back({.type = TokenType::closeParanthesis});
+                tokens.push_back({.type = TokenType::closeParentheses});
             } else if (std::isdigit(peek().value())) {
                 buffer.push_back(eat());
                 while (peek().has_value() && std::isdigit(peek().value())) {
                     buffer.push_back(eat());
                 }
-                tokens.push_back({.type = TokenType::intLiteral, .value = buffer});
+                tokens.push_back(
+                    {.type = TokenType::intLiteral, .value = buffer});
                 buffer.clear();
             } else if (peek().value() == ';') {
                 eat();
@@ -86,9 +89,7 @@ class Tokenizer {
         }
     }
 
-    char eat() {
-        return m_src.at(m_index++);
-    }
+    char eat() { return m_src.at(m_index++); }
 
     const std::string m_src;
     int m_index = 0;

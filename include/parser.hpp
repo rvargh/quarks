@@ -21,7 +21,7 @@ struct StatementExitNode {
 };
 
 struct LetStatementNode {
-    Token identidier;
+    Token identifier;
     ExpressionNode expression;
 };
 
@@ -30,7 +30,7 @@ struct StatementNode {
 };
 
 struct ProgramNode {
-    std::vector<StatementNode> stms;
+    std::vector<StatementNode> statements;
 };
 
 struct intLiteral {};
@@ -54,56 +54,59 @@ class Parser {
         }
     }
 
-    std::optional<StatementNode> parseStatment() {
+    std::optional<StatementNode> parseStatement() {
 
         if (peek().value().type == TokenType::exit && peek(1).has_value() &&
-            peek(1).value().type == TokenType::openParanthesis) {
+            peek(1).value().type == TokenType::openParentheses) {
             eat();
             eat();
-            StatementExitNode statment_exit;
-            if (std::optional<ExpressionNode> node_expression = parseExpression()) {
-                statment_exit = {.expr = node_expression.value()};
+            StatementExitNode statement_exit;
+            if (std::optional<ExpressionNode> node_expression =
+                    parseExpression()) {
+                statement_exit = {.expr = node_expression.value()};
             } else {
                 std::cerr << "Invalid expression pass" << std::endl;
                 exit(EXIT_FAILURE);
             }
 
-            if (peek().has_value() && peek().value().type == TokenType::closeParanthesis) {
+            if (peek().has_value() &&
+                peek().value().type == TokenType::closeParentheses) {
                 eat();
             } else {
                 std::cerr << "Expected `)`" << std::endl;
                 exit(EXIT_FAILURE);
             }
 
-            if (peek().has_value() && peek().value().type == TokenType::semicolon) {
+            if (peek().has_value() &&
+                peek().value().type == TokenType::semicolon) {
                 eat();
             } else {
                 std::cerr << "Expected `;`" << std::endl;
                 exit(EXIT_FAILURE);
             }
 
-            return StatementNode{.var = statment_exit};
+            return StatementNode{.var = statement_exit};
         }
 
         if (peek().has_value() && peek().value().type == TokenType::assign &&
             peek(1).has_value() &&
             peek(1).value().type == TokenType::identifier &&
             peek(2).has_value() && peek(2).value().type == TokenType::equals) {
-            // assign(variable declaration) since we dont need it.
+            // assign(variable declaration) since we don't need it.
             eat();
             // identifier we eat
-            LetStatementNode statment_let =
-                LetStatementNode{.identidier = eat()};
+            LetStatementNode statement_let =
+                LetStatementNode{.identifier = eat()};
             eat();
             if (std::optional<ExpressionNode> node_expression =
                     parseExpression()) {
-                statment_let.expression = node_expression.value();
+                statement_let.expression = node_expression.value();
             } else {
                 std::cerr << "Invalid expression" << std::endl;
                 exit(EXIT_FAILURE);
             }
 
-            return StatementNode{.var = statment_let};
+            return StatementNode{.var = statement_let};
         }
 
         if (peek().has_value() && peek().value().type == TokenType::semicolon) {
@@ -116,38 +119,51 @@ class Parser {
         return {};
     }
 
-    std::optional<ExitNode> parse() {
-        std::optional<ExitNode> exit_node;
+    std::optional<ProgramNode> parseProgram() {
+        ProgramNode program;
         while (peek().has_value()) {
-            if (peek().value().type == TokenType::exit && peek(1).has_value() &&
-                peek(1).value().type == TokenType::openParanthesis) {
-                eat();
-                eat();
-                if (auto node_expression = parseExpression()) {
-                    exit_node = ExitNode{.expr = node_expression.value()};
-                } else {
-                    std::cerr << "Invalid expression pass" << std::endl;
-                    exit(EXIT_FAILURE);
-                }
-            }
-
-            if (peek().has_value() &&
-                peek().value().type == TokenType::closeParanthesis) {
-                eat();
+            if (std::optional<StatementNode> stmt = parseStatement()) {
+                program.statements.push_back(stmt.value());
             } else {
-                std::cerr << "Expected Closing Paranthesis )" << std::endl;
-            }
-
-            if (peek().has_value() &&
-                peek().value().type == TokenType::semicolon) {
-                eat();
-            } else {
-                std::cerr << "Expected Semicolon ;" << std::endl;
+                std::cerr << "Invalid statment" << std::endl;
                 exit(EXIT_FAILURE);
             }
         }
-        return exit_node;
+        return program;
     }
+
+    // std::optional<ExitNode> parse() {
+    //     std::optional<ExitNode> exit_node;
+    //     while (peek().has_value()) {
+    //         if (peek().value().type == TokenType::exit && peek(1).has_value() &&
+    //             peek(1).value().type == TokenType::openParanthesis) {
+    //             eat();
+    //             eat();
+    //             if (auto node_expression = parseExpression()) {
+    //                 exit_node = ExitNode{.expr = node_expression.value()};
+    //             } else {
+    //                 std::cerr << "Invalid expression pass" << std::endl;
+    //                 exit(EXIT_FAILURE);
+    //             }
+    //         }
+    //
+    //         if (peek().has_value() &&
+    //             peek().value().type == TokenType::closeParentheses) {
+    //             eat();
+    //         } else {
+    //             std::cerr << "Expected Closing Parentheses )" << std::endl;
+    //         }
+    //
+    //         if (peek().has_value() &&
+    //             peek().value().type == TokenType::semicolon) {
+    //             eat();
+    //         } else {
+    //             std::cerr << "Expected Semicolon ;" << std::endl;
+    //             exit(EXIT_FAILURE);
+    //         }
+    //     }
+    //     return exit_node;
+    // }
 
   private:
     const std::vector<Token> m_tokens;
