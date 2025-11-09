@@ -67,6 +67,7 @@ class Tokenizer {
             } else if (peek().value() == '=') {
                 eat();
                 tokens.push_back({.type = TokenType::equals});
+                continue;
             } else if (std::isspace(peek().value())) {
                 eat();
                 continue;

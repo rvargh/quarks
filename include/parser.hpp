@@ -86,37 +86,32 @@ class Parser {
             }
 
             return StatementNode{.var = statement_exit};
-        }
-
-        if (peek().has_value() && peek().value().type == TokenType::assign &&
+        } else if (peek().has_value() && peek().value().type == TokenType::assign &&
             peek(1).has_value() &&
             peek(1).value().type == TokenType::identifier &&
             peek(2).has_value() && peek(2).value().type == TokenType::equals) {
             // assign(variable declaration) since we don't need it.
             eat();
             // identifier we eat
-            LetStatementNode statement_let =
-                LetStatementNode{.identifier = eat()};
+            LetStatementNode statement_let =  LetStatementNode{.identifier = eat()};
             eat();
-            if (std::optional<ExpressionNode> node_expression =
-                    parseExpression()) {
+            if (std::optional<ExpressionNode> node_expression = parseExpression()) {
                 statement_let.expression = node_expression.value();
             } else {
                 std::cerr << "Invalid expression" << std::endl;
                 exit(EXIT_FAILURE);
             }
 
+            if (peek().has_value() && peek().value().type == TokenType::semicolon) {
+                eat();
+            } else {
+                std::cerr << "Expected Semi colon" << std::endl;
+                exit(EXIT_FAILURE);
+            }
             return StatementNode{.var = statement_let};
-        }
-
-        if (peek().has_value() && peek().value().type == TokenType::semicolon) {
-            eat();
         } else {
-            std::cerr << "Expected Semi colon" << std::endl;
-            exit(EXIT_FAILURE);
+            return {};
         }
-
-        return {};
     }
 
     std::optional<ProgramNode> parseProgram() {
