@@ -1,5 +1,6 @@
 #include "../include/common.hpp"
 #include "../include/tokenization.hpp"
+#include "../include/arenaAllocator.hpp"
 #include "../include/parser.hpp"
 #include "../include/generation.hpp"
 

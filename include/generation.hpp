@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_map>
 
 class Generator {
 
@@ -6,32 +7,31 @@ class Generator {
     inline explicit Generator(ProgramNode program)
         : m_program(std::move(program)) {}
 
-    void generateExpression(const ExpressionNode& expression) {
+    void generateExpression(const ExpressionNode* expression) {
 
         struct ExpressionNodeVisitor {
 
             Generator* m_generator;
 
-            void operator()(const ExpressionIntLiteralNode& int_literal) const {
+            void operator()(const ExpressionIntLiteralNode* int_literal) const {
                 m_generator->m_output << "    mov rax, "
-                                      << int_literal.int_literals.value.value()
+                                      << int_literal->int_literals.value.value()
                                       << "\n";
                 m_generator->push("rax");
             }
 
-            void operator()(
-                const ExpressionIdentifierNode& identifier_expression) const {
+            void operator()(const ExpressionIdentifierNode* identifier_expression) const {
 
                 if (!m_generator->m_vars.contains(
-                        identifier_expression.identifier.value.value())) {
+                        identifier_expression->identifier.value.value())) {
                     std::cerr << "Undeclared identifier: "
-                              << identifier_expression.identifier.value.value()
+                              << identifier_expression->identifier.value.value()
                               << std::endl;
                     exit(EXIT_FAILURE);
                 }
 
                 const Variables& var = m_generator->m_vars.at(
-                    identifier_expression.identifier.value.value());
+                    identifier_expression->identifier.value.value());
 
                 std::stringstream offset;
 
@@ -40,17 +40,21 @@ class Generator {
                        << "]";
                 m_generator->push(offset.str());
             }
+
+            void operator()(const BinaryExpressionNode* binaryNode) const {
+                assert(false);
+            }
         };
 
         ExpressionNodeVisitor visitor{.m_generator = this};
-        std::visit(visitor, expression.var);
+        std::visit(visitor, expression->var);
     }
 
     [[nodiscard]] std::string generateProgram() {
 
         m_output << "global _start\n_start:\n";
 
-        for (const StatementNode& statement : m_program.statements) {
+        for (const StatementNode* statement : m_program.statements) {
             generateStatement(statement);
         }
         m_output << "    mov rax, 60\n";
@@ -60,37 +64,39 @@ class Generator {
         return m_output.str();
     }
 
-    void generateStatement(const StatementNode& stmt) {
+    void generateStatement(const StatementNode* stmt) {
 
         struct StatementVisitor {
             Generator* m_generator;
 
-            void operator()(const LetStatementNode& stmt_let) const {
+            void operator()(const LetStatementNode* stmt_let) const {
 
                 if (m_generator->m_vars.contains(
-                        stmt_let.identifier.value.value())) {
+                        stmt_let->identifier.value.value())) {
                     std::cerr << "Identifier already used: "
-                              << stmt_let.identifier.value.value() << std::endl;
+                              << stmt_let->identifier.value.value() << std::endl;
                     exit(EXIT_FAILURE);
                 }
-                m_generator->m_vars.insert(
-                    {stmt_let.identifier.value.value(),
-                     Variables{.stack_location = m_generator->m_stack_size}});
-                m_generator->generateExpression(stmt_let.expression);
+                m_generator->m_vars.insert({
+                        stmt_let->identifier.value.value(),
+                        Variables{.stack_location = m_generator->m_stack_size}
+                    });
+                m_generator->generateExpression(stmt_let->expression);
                 // m_generator->push("rax");
             }
-            void operator()(const StatementExitNode& stmt_exit) const {
+            void operator()(const StatementExitNode* stmt_exit) const {
 
-                m_generator->generateExpression(stmt_exit.expr);
+                m_generator->generateExpression(stmt_exit->expr);
 
                 m_generator->m_output << "    mov rax, 60\n";
                 m_generator->pop("rdi");
                 m_generator->m_output << "    syscall\n";
             }
+
         };
 
         StatementVisitor visitor{.m_generator = this};
-        std::visit(visitor, stmt.var);
+        std::visit(visitor, stmt->var);
     }
 
   private:
