@@ -3,6 +3,8 @@
 //
 #pragma once
 
+struct ExpressionNode;
+
 struct ExpressionIntLiteralNode {
     Token int_literals;
 };
@@ -11,26 +13,40 @@ struct ExpressionIdentifierNode {
     Token identifier;
 };
 
+struct BinaryExpressionAddition {
+    ExpressionNode* lhs;
+    ExpressionNode* rhs;
+};
+
+struct BinaryExpressionMultiplication {
+    ExpressionNode* lhs;
+    ExpressionNode* rhs;
+};
+
+struct BinaryExpressionNode {
+    std::variant<BinaryExpressionAddition*,BinaryExpressionMultiplication*> vars;
+};
+
 // these are just tokens(integer literals)
 struct ExpressionNode {
-    std::variant<ExpressionIntLiteralNode, ExpressionIdentifierNode> var;
+    std::variant<ExpressionIntLiteralNode*, ExpressionIdentifierNode*, BinaryExpressionNode*> var;
 };
 
 struct StatementExitNode {
-    ExpressionNode expr;
+    ExpressionNode* expr;
 };
 
 struct LetStatementNode {
     Token identifier;
-    ExpressionNode expression;
+    ExpressionNode* expression;
 };
 
 struct StatementNode {
-    std::variant<StatementExitNode, LetStatementNode> var;
+    std::variant<StatementExitNode*, LetStatementNode*> var;
 };
 
 struct ProgramNode {
-    std::vector<StatementNode> statements;
+    std::vector<StatementNode*> statements;
 };
 
 struct intLiteral {};
@@ -38,32 +54,37 @@ struct intLiteral {};
 class Parser {
   public:
     inline explicit Parser(std::vector<Token> tokens)
-        : m_tokens(std::move(tokens)) {}
+        : m_tokens(std::move(tokens)),  m_allocator(1024 * 1024 * 4){}
 
-    std::optional<ExpressionNode> parseExpression() {
-        if (peek().has_value() &&
-            peek().value().type == TokenType::intLiteral) {
-            return ExpressionNode{
-                .var = ExpressionIntLiteralNode{.int_literals = eat()}};
-        } else if (peek().has_value() &&
-                   peek().value().type == TokenType::identifier) {
-            return ExpressionNode{
-                .var = ExpressionIdentifierNode{.identifier = eat()}};
+    std::optional<ExpressionNode*> parseExpression() {
+        if (peek().has_value() && peek().value().type == TokenType::intLiteral) {
+            ExpressionIntLiteralNode* int_literal = m_allocator.alloc<ExpressionIntLiteralNode>();
+            int_literal->int_literals = eat();
+            ExpressionNode* node = m_allocator.alloc<ExpressionNode>();
+            node->var = int_literal;
+            return node;
+        } else if (peek().has_value() && peek().value().type == TokenType::identifier) {
+            ExpressionIdentifierNode* identifier = m_allocator.alloc<ExpressionIdentifierNode>();
+            identifier->identifier = eat();
+            ExpressionNode* node = m_allocator.alloc<ExpressionNode>();
+            node->var = identifier;
+            return node;
         } else {
             return std::nullopt;
         }
     }
 
-    std::optional<StatementNode> parseStatement() {
+    std::optional<StatementNode*> parseStatement() {
 
         if (peek().value().type == TokenType::exit && peek(1).has_value() &&
             peek(1).value().type == TokenType::openParentheses) {
             eat();
             eat();
-            StatementExitNode statement_exit;
-            if (std::optional<ExpressionNode> node_expression =
-                    parseExpression()) {
-                statement_exit = {.expr = node_expression.value()};
+
+            StatementExitNode* exitNode = m_allocator.alloc<StatementExitNode>();
+
+            if (std::optional<ExpressionNode*> node_expression = parseExpression()) {
+                exitNode->expr = node_expression.value();
             } else {
                 std::cerr << "Invalid expression pass" << std::endl;
                 exit(EXIT_FAILURE);
@@ -84,8 +105,10 @@ class Parser {
                 std::cerr << "Expected `;`" << std::endl;
                 exit(EXIT_FAILURE);
             }
+            StatementNode* statement = m_allocator.alloc<StatementNode>();
+            statement->var = exitNode;
+            return statement;
 
-            return StatementNode{.var = statement_exit};
         } else if (peek().has_value() && peek().value().type == TokenType::assign &&
             peek(1).has_value() &&
             peek(1).value().type == TokenType::identifier &&
@@ -93,10 +116,10 @@ class Parser {
             // assign(variable declaration) since we don't need it.
             eat();
             // identifier we eat
-            LetStatementNode statement_let =  LetStatementNode{.identifier = eat()};
+            LetStatementNode* statement_let =  m_allocator.alloc<LetStatementNode>();
             eat();
-            if (std::optional<ExpressionNode> node_expression = parseExpression()) {
-                statement_let.expression = node_expression.value();
+            if (std::optional<ExpressionNode*> node_expression = parseExpression()) {
+                statement_let->expression = node_expression.value();
             } else {
                 std::cerr << "Invalid expression" << std::endl;
                 exit(EXIT_FAILURE);
@@ -108,7 +131,10 @@ class Parser {
                 std::cerr << "Expected Semi colon" << std::endl;
                 exit(EXIT_FAILURE);
             }
-            return StatementNode{.var = statement_let};
+
+            StatementNode* statement = m_allocator.alloc<StatementNode>();
+            statement->var = statement_let;
+            return statement;
         } else {
             return {};
         }
@@ -117,7 +143,7 @@ class Parser {
     std::optional<ProgramNode> parseProgram() {
         ProgramNode program;
         while (peek().has_value()) {
-            if (std::optional<StatementNode> stmt = parseStatement()) {
+            if (std::optional<StatementNode*> stmt = parseStatement()) {
                 program.statements.push_back(stmt.value());
             } else {
                 std::cerr << "Invalid statment" << std::endl;
@@ -174,4 +200,6 @@ class Parser {
     Token eat() { return m_tokens.at(m_index++); }
 
     size_t m_index = 0;
+
+    ArenaAllocator m_allocator;
 };
