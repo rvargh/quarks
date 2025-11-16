@@ -1,8 +1,8 @@
-#include "../include/common.hpp"
-#include "../include/tokenization.hpp"
 #include "../include/arenaAllocator.hpp"
-#include "../include/parser.hpp"
+#include "../include/common.hpp"
 #include "../include/generation.hpp"
+#include "../include/parser.hpp"
+#include "../include/tokenization.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -11,8 +11,6 @@ int main(int argc, char* argv[]) {
     //     std::cerr << "quarks <*.hy>\n";
     //     return EXIT_FAILURE;
     // }
-
-
 
     std::string content;
     /** inner scope to close the file once read is completed */
@@ -46,7 +44,6 @@ int main(int argc, char* argv[]) {
         file << generator.generateProgram();
     }
 
-    
     std::system("nasm -felf64 ../out.asm");
     std::system("ld -o ../out ../out.o");
 

@@ -8,7 +8,9 @@ enum class TokenType {
     closeParentheses,
     identifier,
     assign,
-    equals
+    equals,
+    addition,
+    multiplication
 };
 
 struct Token {
@@ -71,6 +73,9 @@ class Tokenizer {
             } else if (std::isspace(peek().value())) {
                 eat();
                 continue;
+            } else if (peek().value() == '+') {
+                eat();
+                tokens.push_back({.type = TokenType::addition});
             } else {
                 std::cerr << "You messed up!" << std::endl;
                 exit(EXIT_FAILURE);

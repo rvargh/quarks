@@ -1,13 +1,12 @@
 #pragma once
 
-#include<string>
-#include <sstream>
+#include <cassert>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <optional>
-#include <vector>
-#include <variant>
+#include <sstream>
+#include <string>
 #include <unordered_map>
-#include <cstdlib>
-#include <cassert>
+#include <variant>
+#include <vector>
