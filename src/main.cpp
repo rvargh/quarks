@@ -1,8 +1,8 @@
-#include "../include/arenaAllocator.hpp"
 #include "../include/common.hpp"
-#include "../include/generation.hpp"
-#include "../include/parser.hpp"
+#include "../include/arenaAllocator.hpp"
 #include "../include/tokenization.hpp"
+#include "../include/parser.hpp"
+#include "../include/generation.hpp"
 
 int main(int argc, char* argv[]) {
 
