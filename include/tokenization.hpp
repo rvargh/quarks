@@ -1,5 +1,7 @@
 #pragma once
 
+ using namespace std;
+
 enum class TokenType {
     exit,
     intLiteral,
@@ -10,27 +12,39 @@ enum class TokenType {
     assign,
     equals,
     addition,
-    multiplication
+    multiplication,
+    division,
+    substraction
 };
+
+ inline std::optional<int> isBinaryOperator(const TokenType type) {
+     switch (type) {
+     case TokenType::substraction:
+     case TokenType::addition:
+         return 0;
+     case TokenType::multiplication:
+     case TokenType::division:
+         return 1;
+     default:
+         return nullopt;
+     }
+ }
 
 struct Token {
     TokenType type;
-    std::optional<std::string> value;
+    optional<std::string> value;
 };
 
 class Tokenizer {
   public:
-    inline explicit Tokenizer(std::string source) : m_src(std::move(source)) {}
+    explicit Tokenizer(std::string source) : m_src(std::move(source)) {}
 
-    inline std::vector<Token> tokenize() {
-        std::string buffer;
-        std::vector<Token> tokens;
-
-        // e x i t   2 1 ;
-        // 0 1 2 3 4 5 6 7
+    vector<Token> tokenize() {
+        string buffer;
+        vector<Token> tokens;
 
         while (peek().has_value()) {
-            if (std::isalpha(peek().value())) {
+            if (isalpha(peek().value())) {
                 buffer.push_back(eat());
                 while (peek().has_value() && std::isalnum(peek().value())) {
                     buffer.push_back(eat());
@@ -39,11 +53,9 @@ class Tokenizer {
                     tokens.push_back(
                         {.type = TokenType::exit, .value = buffer});
                     buffer.clear();
-                    continue;
                 } else if (buffer == "assign") {
                     tokens.push_back({.type = TokenType::assign});
                     buffer.clear();
-                    continue;
                 } else {
                     tokens.push_back(
                         {.type = TokenType::identifier, .value = buffer});
@@ -55,9 +67,9 @@ class Tokenizer {
             } else if (peek().value() == ')') {
                 eat();
                 tokens.push_back({.type = TokenType::closeParentheses});
-            } else if (std::isdigit(peek().value())) {
+            } else if (isdigit(peek().value())) {
                 buffer.push_back(eat());
-                while (peek().has_value() && std::isdigit(peek().value())) {
+                while (peek().has_value() && isdigit(peek().value())) {
                     buffer.push_back(eat());
                 }
                 tokens.push_back(
@@ -69,15 +81,22 @@ class Tokenizer {
             } else if (peek().value() == '=') {
                 eat();
                 tokens.push_back({.type = TokenType::equals});
-                continue;
-            } else if (std::isspace(peek().value())) {
+            } else if (isspace(peek().value())) {
                 eat();
-                continue;
             } else if (peek().value() == '+') {
                 eat();
                 tokens.push_back({.type = TokenType::addition});
+            } else if (peek().value() == '*') {
+                eat();
+                tokens.push_back({.type = TokenType::multiplication});
+            } else if (peek().value() == '-') {
+                eat();
+                tokens.push_back({.type = TokenType::substraction});
+            } else if (peek().value() == '/') {
+                eat();
+                tokens.push_back({.type = TokenType::division});
             } else {
-                std::cerr << "You messed up!" << std::endl;
+                cerr << "You messed up!" << endl;
                 exit(EXIT_FAILURE);
             }
         }
@@ -87,7 +106,7 @@ class Tokenizer {
     }
 
   private:
-    [[nodiscard]] inline std::optional<char> peek(const int offset = 0) const {
+    [[nodiscard]] inline optional<char> peek(const int offset = 0) const {
         if (m_index + offset >= m_src.length()) {
             return {};
         } else {
@@ -97,6 +116,6 @@ class Tokenizer {
 
     char eat() { return m_src.at(m_index++); }
 
-    const std::string m_src;
+    const string m_src;
     int m_index = 0;
 };

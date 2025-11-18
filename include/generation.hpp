@@ -1,5 +1,5 @@
 #pragma once
-
+#include "parser.hpp"
 
 class Generator {
 
@@ -37,10 +37,61 @@ class Generator {
                                       << it->int_literals.value.value() << "\n";
                 m_generator->push("rax");
             }
+
+            void operator()(const TermParenthesisNode* pn) const {
+                m_generator->generateExpression(pn->expression);
+            }
         };
 
         TermVisitor visitor{.m_generator = this};
         std::visit(visitor, expression->vars);
+    }
+
+    void generateBinaryExpression(const BinaryExpressionNode* bns) {
+
+        struct binaryExpressionVisitor {
+
+            Generator* m_generator;
+
+            void operator()(const BinaryExpressionAddition* add) const {
+                m_generator->generateExpression(add->rhs);
+                m_generator->generateExpression(add->lhs);
+                m_generator->pop("rax");
+                m_generator->pop("rbx");
+                m_generator->m_output << "    ADD rax, rbx\n";
+                m_generator->push("rax");
+            }
+
+            void operator()(const BinaryExpressionSubtraction* sub) const {
+                m_generator->generateExpression(sub->rhs);
+                m_generator->generateExpression(sub->lhs);
+                m_generator->pop("rax");
+                m_generator->pop("rbx");
+                m_generator->m_output << "    SUB rax, rbx\n";
+                m_generator->push("rax");
+            }
+
+            void operator()(const BinaryExpressionMultiplication* mul) const {
+                m_generator->generateExpression(mul->rhs);
+                m_generator->generateExpression(mul->lhs);
+                m_generator->pop("rax");
+                m_generator->pop("rbx");
+                m_generator->m_output << "    MUL rbx\n";
+                m_generator->push("rax");
+            }
+
+            void operator()(const BinaryExpressionDivision* div) const {
+                m_generator->generateExpression(div->rhs);
+                m_generator->generateExpression(div->lhs);
+                m_generator->pop("rax");
+                m_generator->pop("rbx");
+                m_generator->m_output << "    DIV rbx\n";
+                m_generator->push("rax");
+            }
+        };
+
+        binaryExpressionVisitor visitor{.m_generator = this};
+        std::visit(visitor,bns->ops);
     }
 
     void generateExpression(const ExpressionNode* expression) {
@@ -54,13 +105,7 @@ class Generator {
             }
 
             void operator()(const BinaryExpressionNode* binaryNode) const {
-
-                m_generator->generateExpression(binaryNode->add->lhs);
-                m_generator->generateExpression(binaryNode->add->rhs);
-                m_generator->pop("rax");
-                m_generator->pop("rbx");
-                m_generator->m_output << "    ADD rax, rbx\n";
-                m_generator->push("rax");
+                m_generator->generateBinaryExpression(binaryNode);
             }
         };
 
