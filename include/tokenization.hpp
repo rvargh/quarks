@@ -14,7 +14,9 @@ enum class TokenType {
     addition,
     multiplication,
     division,
-    substraction
+    substraction,
+    open_curly,
+    close_curly,
 };
 
  inline std::optional<int> isBinaryOperator(const TokenType type) {
@@ -95,6 +97,12 @@ class Tokenizer {
             } else if (peek().value() == '/') {
                 eat();
                 tokens.push_back({.type = TokenType::division});
+            } else if (peek().value() == '{') {
+                eat();
+                tokens.push_back({.type = TokenType::open_curly});
+            } else if (peek().value() == '}') {
+                eat();
+                tokens.push_back({.type = TokenType::close_curly});
             } else {
                 cerr << "You messed up!" << endl;
                 exit(EXIT_FAILURE);

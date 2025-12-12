@@ -60,8 +60,14 @@ struct LetStatementNode {
     ExpressionNode* expression;
 };
 
+struct StatementNode;
+
+struct ScopeStatementNode {
+    std::vector<StatementNode*> statements;
+};
+
 struct StatementNode {
-    std::variant<StatementExitNode*, LetStatementNode*> var;
+    std::variant<StatementExitNode*, LetStatementNode*, ScopeStatementNode*> var;
 };
 
 struct ProgramNode {

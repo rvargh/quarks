@@ -1,6 +1,8 @@
 #pragma once
 #include "parser.hpp"
 
+#include <algorithm>
+
 class Generator {
 
   public:
@@ -13,19 +15,24 @@ class Generator {
             Generator* m_generator;
 
             void operator()(const TermIdentifierNode* id) const {
-                if (!m_generator->m_vars.contains(
-                        id->identifier.value.value())) {
+
+                const auto it = std::find_if(m_generator->m_vars.begin(),
+                    m_generator->m_vars.end(),
+                    [&](const Variables& variables) {
+                           return variables.name == id->identifier.value.value();
+                       });
+
+                if (it  == m_generator->m_vars.end())
+                {
                     std::cerr << "Undeclared identifier: "
                               << id->identifier.value.value() << std::endl;
                     exit(EXIT_FAILURE);
                 }
-                const Variables& var =
-                    m_generator->m_vars.at(id->identifier.value.value());
 
                 std::stringstream offset;
 
                 offset << "QWORD [rsp + "
-                       << (m_generator->m_stack_size - var.stack_location - 1) *
+                       << (m_generator->m_stack_size - (*it).stack_location - 1) *
                               8
                        << "]";
                 m_generator->push(offset.str());
@@ -133,16 +140,21 @@ class Generator {
             Generator* m_generator;
 
             void operator()(const LetStatementNode* stmt_let) const {
-                if (m_generator->m_vars.contains(
-                        stmt_let->identifier.value.value())) {
+
+                const auto it = std::find_if(m_generator->m_vars.begin(),
+                    m_generator->m_vars.end(),
+                    [&](const Variables& variables) {
+                       return variables.name == stmt_let->identifier.value.value();
+                   });
+                if (it != m_generator->m_vars.cend()) {
                     std::cerr << "Identifier already used: "
                               << stmt_let->identifier.value.value()
                               << std::endl;
                     exit(EXIT_FAILURE);
                 }
-                m_generator->m_vars.insert(
-                    {stmt_let->identifier.value.value(),
-                     Variables{.stack_location = m_generator->m_stack_size}});
+                m_generator->m_vars.push_back({
+                    Variables{.name = stmt_let->identifier.value.value(),.stack_location = m_generator->m_stack_size}
+                });
                 m_generator->generateExpression(stmt_let->expression);
             }
             void operator()(const StatementExitNode* stmt_exit) const {
@@ -150,6 +162,10 @@ class Generator {
                 m_generator->m_output << "    mov rax, 60\n";
                 m_generator->pop("rdi");
                 m_generator->m_output << "    syscall\n";
+            }
+
+            void operator()(const ScopeStatementNode* stmt_exit) const {
+
             }
         };
         StatementVisitor visitor{.m_generator = this};
@@ -162,10 +178,11 @@ class Generator {
     size_t m_stack_size = 0;
 
     struct Variables {
+        std::string name;
         size_t stack_location;
     };
 
-    std::unordered_map<std::string, Variables> m_vars;
+    std::vector<Variables> m_vars;
 
     void push(const std::string& reg) {
         m_output << "    push " << reg << "\n";

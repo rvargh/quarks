@@ -5,7 +5,8 @@ $$
     \begin{cases}
         \text{exit}([\text{Expression}]); \\
         \text{assign}\space\text{identifier} = [
-        \text{Expression}];
+        \text{Expression}];\\
+        \{[\text{Statement}]^*\}
     \end{cases}
     \\
     [\text{Expression}] &\to
