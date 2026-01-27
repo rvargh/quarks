@@ -62,12 +62,17 @@ struct LetStatementNode {
 
 struct StatementNode;
 
-struct ScopeStatementNode {
+struct nodeScope {
     std::vector<StatementNode*> statements;
 };
 
+struct nodeIfStatement {
+    ExpressionNode* expression;
+    nodeScope* scope;
+};
+
 struct StatementNode {
-    std::variant<StatementExitNode*, LetStatementNode*, ScopeStatementNode*> var;
+    std::variant<StatementExitNode*, LetStatementNode*,nodeScope* ,nodeIfStatement*> var;
 };
 
 struct ProgramNode {
@@ -179,6 +184,20 @@ class Parser {
         return expressionLhs;
     }
 
+    std::optional<nodeScope*> parse_scope() {
+
+        if (!try_consume(TokenType::open_curly).has_value()) {
+            return std::nullopt;
+        }
+        auto scope = m_allocator.alloc<nodeScope>();
+        while (auto stmt = parseStatement()) {
+            scope->statements.push_back(stmt.value());
+        }
+
+        try_consume(TokenType::close_curly,"Expected `}`");
+        return scope;
+    }
+
     std::optional<StatementNode*> parseStatement() {
 
         if (peek().value().type == TokenType::exit && peek(1).has_value() &&
@@ -246,6 +265,34 @@ class Parser {
             auto* statement = m_allocator.alloc<StatementNode>();
             statement->var = statement_let;
             return statement;
+        } else if (peek().has_value() && peek().value().type == TokenType::open_curly) {
+            if (auto scope = parse_scope()) {
+                auto stmt = m_allocator.alloc<StatementNode>();
+                stmt->var = scope.value();
+                return stmt;
+            } else {
+                std::cerr << "Invalid scope" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        } else if (auto if_ = try_consume(TokenType::if_)) {
+            try_consume(TokenType::openParentheses, "Expected `(`");
+            auto statement_if = m_allocator.alloc<nodeIfStatement>();
+            if (auto expr = parseExpression()) {
+                statement_if->expression = expr.value();
+            } else {
+                std::cerr << "Invalid Expression" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            try_consume(TokenType::closeParentheses, "Expected `)`");
+            if (auto scope = parse_scope()) {
+                statement_if->scope = scope.value();
+            } else {
+                std::cerr << "Invalid scope" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            auto statement = m_allocator.alloc<StatementNode>();
+            statement->var = statement_if;
+            return statement;
         } else {
             return {};
         }
@@ -272,6 +319,27 @@ class Parser {
             return {};
         } else {
             return m_tokens.at(m_index + offset);
+        }
+    }
+
+    inline Token try_consume(TokenType type, const std::string& err_msg)
+    {
+        if (peek().has_value() && peek().value().type == type) {
+            return eat();
+        }
+        else {
+            std::cerr << err_msg << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    inline std::optional<Token> try_consume(TokenType type)
+    {
+        if (peek().has_value() && peek().value().type == type) {
+            return eat();
+        }
+        else {
+            return {};
         }
     }
 

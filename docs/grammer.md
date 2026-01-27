@@ -6,9 +6,11 @@ $$
         \text{exit}([\text{Expression}]); \\
         \text{assign}\space\text{identifier} = [
         \text{Expression}];\\
-        \{[\text{Statement}]^*\}
+        \text{if} ([\text{Expression}])[\text{Scope}]\\
+        \{[\text{Scope}]^*\}
     \end{cases}
     \\
+    \text{[Scope]} & \to \{[\text{Statement}]^*\}\\
     [\text{Expression}] &\to
     \begin{cases}
         [\text{Term}] \\
