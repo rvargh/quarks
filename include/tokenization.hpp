@@ -81,7 +81,26 @@ class Tokenizer {
                 tokens.push_back(
                     {.type = TokenType::intLiteral, .value = buffer});
                 buffer.clear();
-            } else if (peek().value() == ';') {
+            } else if (peek().value() == '-' && peek(1).has_value() && peek(1).value() == '-') {
+                eat();
+                eat();
+                while (peek().has_value() && peek().value() != '\n') {
+                    eat();
+                }
+            } else if (peek().value() == '-' && peek(1).has_value() && peek(1).value() == '*') {
+                eat();
+                eat();
+                while (peek().has_value() && peek().value() == '*' && peek().value() == '-') {
+                    break;
+                }
+                if (peek().has_value()) {
+                    eat();
+                }
+                if (peek().has_value()) {
+                    eat();
+                }
+            }
+            else if (peek().value() == ';') {
                 eat();
                 tokens.push_back({.type = TokenType::semicolon});
             } else if (peek().value() == '=') {
