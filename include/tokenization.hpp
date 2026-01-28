@@ -17,7 +17,9 @@ enum class TokenType {
     substraction,
     open_curly,
     close_curly,
-    if_
+    if_,
+    elif,
+    else_,
 };
 
  inline std::optional<int> isBinaryOperator(const TokenType type) {
@@ -61,6 +63,12 @@ class Tokenizer {
                     buffer.clear();
                 } else if (buffer == "if") {
                     tokens.push_back({.type = TokenType::if_});
+                    buffer.clear();
+                } else if (buffer == "elif") {
+                    tokens.push_back({.type = TokenType::elif});
+                    buffer.clear();
+                } else if (buffer == "else") {
+                    tokens.push_back({.type = TokenType::else_});
                     buffer.clear();
                 } else {
                     tokens.push_back(

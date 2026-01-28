@@ -6,11 +6,23 @@ $$
         \text{exit}([\text{Expression}]); \\
         \text{assign}\space\text{identifier} = [
         \text{Expression}];\\
-        \text{if} ([\text{Expression}])[\text{Scope}]\\
+        \text{if} ([\text{Expression}])[\text{Scope}]
+        \text{[IfPredicate]}\\
         \{[\text{Scope}]^*\}
-    \end{cases}
-    \\
+    \end{cases}\\
     \text{[Scope]} & \to \{[\text{Statement}]^*\}\\
+    \text{[IfPredicate]} &\to
+    \begin{cases}
+        \text{elif}(\text{[Expression]})\text{[Scope]}
+        \text{[IfPredicate]} \\
+        \text{[Else]}\\
+        \epsilon
+    \end{cases} \\
+    \text{[Else]} &\to
+    \begin{cases}
+        \text{else}(\text{[Expression]})\text{[Scope]}
+        \epsilon
+    \end{cases} \\
     [\text{Expression}] &\to
     \begin{cases}
         [\text{Term}] \\

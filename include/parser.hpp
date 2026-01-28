@@ -1,5 +1,5 @@
 //
-// Created by royva on 27-10-2025.
+// Created by roy varghese on 27-10-2025.
 //
 #pragma once
 #include "tokenization.hpp"
@@ -57,7 +57,7 @@ struct StatementExitNode {
 
 struct LetStatementNode {
     Token identifier;
-    ExpressionNode* expression;
+    ExpressionNode* expression {};
 };
 
 struct StatementNode;
@@ -66,9 +66,26 @@ struct nodeScope {
     std::vector<StatementNode*> statements;
 };
 
-struct nodeIfStatement {
-    ExpressionNode* expression;
+struct nodeIfPredicate;
+
+struct nodeIfPredicateElif {
+    ExpressionNode* expression{};
     nodeScope* scope;
+    std::optional<nodeIfPredicate*> ifPredicate;
+};
+
+struct nodeIfPredicateElse {
+    nodeScope* scope;
+};
+
+struct nodeIfPredicate {
+    std::variant<nodeIfPredicateElif*,nodeIfPredicateElse*> predicate;
+};
+
+struct nodeIfStatement {
+    ExpressionNode* expression {};
+    nodeScope* scope{};
+    std::optional<nodeIfPredicate*> ifPredicate;
 };
 
 struct StatementNode {
@@ -122,7 +139,7 @@ class Parser {
         }
     }
 
-    std::optional<ExpressionNode*> parseExpression(int minPrecedence = 0) {
+    std::optional<ExpressionNode*> parseExpression(const int minPrecedence = 0) {
 
         std::optional<TermNode*> termLhs = parseTerm();
         if (!termLhs.has_value()) {
@@ -143,8 +160,8 @@ class Parser {
                 break;
             }
             Token ops = eat();
-            int nminPrecedence = precedence.value() + 1;
-            auto expressionRhs = parseExpression(nminPrecedence);
+            int currentPrecedence = precedence.value() + 1;
+            auto expressionRhs = parseExpression(currentPrecedence);
             if (!expressionRhs.has_value()) {
                 std::cerr << "Unable to parse expression.\n";
                 exit(EXIT_FAILURE);
@@ -196,6 +213,44 @@ class Parser {
 
         try_consume(TokenType::close_curly,"Expected `}`");
         return scope;
+    }
+
+    std::optional<nodeIfPredicate*> parse_if_predicate()
+    {
+        if (try_consume(TokenType::elif)) {
+            try_consume(TokenType::openParentheses,"Expected `(`");
+            auto elif = m_allocator.alloc<nodeIfPredicateElif>();
+            if (auto expression = parseExpression()) {
+                elif->expression = expression.value();
+            } else {
+                std::cerr << "Expected Expression" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            try_consume(TokenType::closeParentheses,"Expected `)`");
+            if (const auto scope = parse_scope()) {
+                elif->scope = scope.value();
+            } else {
+                std::cerr << "Expected Scope" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            elif->ifPredicate = parse_if_predicate();
+            auto predicate = m_allocator.alloc<nodeIfPredicate>();
+            return predicate;
+        }
+
+        if (try_consume(TokenType::else_)) {
+            auto else_ = m_allocator.alloc<nodeIfPredicateElse>();
+            if (auto scope = parse_scope()) {
+                else_->scope = scope.value();
+            } else {
+                std::cerr << "Expected scope" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            auto predicate = m_allocator.emplace<nodeIfPredicate>(else_);
+            return predicate;
+        }
+        return std::nullopt;
     }
 
     std::optional<StatementNode*> parseStatement() {
@@ -284,12 +339,13 @@ class Parser {
                 exit(EXIT_FAILURE);
             }
             try_consume(TokenType::closeParentheses, "Expected `)`");
-            if (auto scope = parse_scope()) {
+            if (const auto scope = parse_scope()) {
                 statement_if->scope = scope.value();
             } else {
                 std::cerr << "Invalid scope" << std::endl;
                 exit(EXIT_FAILURE);
             }
+            statement_if->ifPredicate = parse_if_predicate();
             auto statement = m_allocator.alloc<StatementNode>();
             statement->var = statement_if;
             return statement;
