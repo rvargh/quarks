@@ -1,6 +1,5 @@
 #pragma once
 #include "parser.hpp"
-
 #include <algorithm>
 
 class Generator {
@@ -16,8 +15,8 @@ class Generator {
 
             void operator()(const TermIdentifierNode* id) const {
 
-                const auto it = std::find_if(m_generator.m_vars.begin(),
-                    m_generator.m_vars.end(),
+                const auto it = ranges::find_if(
+                    m_generator.m_vars,
                     [&](const Variables& variables) {
                            return variables.name == id->identifier.value.value();
                        });
@@ -32,7 +31,7 @@ class Generator {
                 std::stringstream offset;
 
                 offset << "QWORD [rsp + "
-                       << (m_generator.m_stack_size - (*it).stack_location - 1) *
+                       << (m_generator.m_stack_size - it->stack_location - 1) *
                               8
                        << "]";
                 m_generator.push(offset.str());
@@ -150,8 +149,8 @@ class Generator {
 
             void operator()(const LetStatementNode* stmt_let) const {
 
-                const auto it = std::find_if(m_generator.m_vars.begin(),
-                    m_generator.m_vars.end(),
+                const auto it = ranges::find_if(
+                    m_generator.m_vars,
                     [&](const Variables& variables) {
                        return variables.name == stmt_let->identifier.value.value();
                    });
@@ -221,7 +220,7 @@ class Generator {
     }
 
     void end_scope() {
-        size_t pop_count = m_vars.size() - m_scopes.back();
+        const size_t pop_count = m_vars.size() - m_scopes.back();
         m_output << "    add rsp, " << pop_count * 8 << "\n";
         m_stack_size -= pop_count;
         for (int i = 0; i < pop_count; i++) {

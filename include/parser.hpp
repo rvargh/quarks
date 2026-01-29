@@ -70,7 +70,7 @@ struct nodeIfPredicate;
 
 struct nodeIfPredicateElif {
     ExpressionNode* expression{};
-    nodeScope* scope;
+    nodeScope* scope {};
     std::optional<nodeIfPredicate*> ifPredicate;
 };
 

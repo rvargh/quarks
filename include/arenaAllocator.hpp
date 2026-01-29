@@ -56,7 +56,7 @@ public:
     {
         // No destructors are called for the stored objects. Thus, memory
         // leaks are possible (e.g. when storing std::vector objects or
-        // other non-trivially destructable objects in the allocator).
+        // other non-trivially destructible objects in the allocator).
         // Although this could be changed, it would come with additional
         // runtime overhead and therefore is not implemented.
         delete[] m_buffer;
