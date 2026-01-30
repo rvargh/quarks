@@ -69,7 +69,7 @@ struct nodeScope {
 struct nodeIfPredicate;
 
 struct nodeIfPredicateElif {
-    ExpressionNode* expression{};
+    ExpressionNode* expression {};
     nodeScope* scope {};
     std::optional<nodeIfPredicate*> ifPredicate;
 };
@@ -219,8 +219,8 @@ class Parser {
     {
         if (try_consume(TokenType::elif)) {
             try_consume(TokenType::openParentheses,"Expected `(`");
-            auto elif = m_allocator.alloc<nodeIfPredicateElif>();
-            if (auto expression = parseExpression()) {
+            const auto elif = m_allocator.alloc<nodeIfPredicateElif>();
+            if (const auto expression = parseExpression()) {
                 elif->expression = expression.value();
             } else {
                 std::cerr << "Expected Expression" << std::endl;
@@ -235,13 +235,13 @@ class Parser {
             }
 
             elif->ifPredicate = parse_if_predicate();
-            auto predicate = m_allocator.alloc<nodeIfPredicate>();
+            auto predicate = m_allocator.emplace<nodeIfPredicate>(elif);
             return predicate;
         }
 
         if (try_consume(TokenType::else_)) {
             auto else_ = m_allocator.alloc<nodeIfPredicateElse>();
-            if (auto scope = parse_scope()) {
+            if (const auto scope = parse_scope()) {
                 else_->scope = scope.value();
             } else {
                 std::cerr << "Expected scope" << std::endl;
@@ -261,8 +261,7 @@ class Parser {
             eat();
 
             auto* exitNode = m_allocator.alloc<StatementExitNode>();
-
-            if (std::optional<ExpressionNode*> node_expression =
+            if (const std::optional<ExpressionNode*> node_expression =
                     parseExpression()) {
                 exitNode->expr = node_expression.value();
             } else {
@@ -288,8 +287,9 @@ class Parser {
             auto* statement = m_allocator.alloc<StatementNode>();
             statement->var = exitNode;
             return statement;
+        }
 
-        } else if (peek().has_value() &&
+        if (peek().has_value() &&
                    peek().value().type == TokenType::assign &&
                    peek(1).has_value() &&
                    peek(1).value().type == TokenType::identifier &&
@@ -320,7 +320,9 @@ class Parser {
             auto* statement = m_allocator.alloc<StatementNode>();
             statement->var = statement_let;
             return statement;
-        } else if (peek().has_value() && peek().value().type == TokenType::open_curly) {
+        }
+
+        if (peek().has_value() && peek().value().type == TokenType::open_curly) {
             if (auto scope = parse_scope()) {
                 auto stmt = m_allocator.alloc<StatementNode>();
                 stmt->var = scope.value();
@@ -329,7 +331,9 @@ class Parser {
                 std::cerr << "Invalid scope" << std::endl;
                 exit(EXIT_FAILURE);
             }
-        } else if (auto if_ = try_consume(TokenType::if_)) {
+        }
+
+        if (auto if_ = try_consume(TokenType::if_)) {
             try_consume(TokenType::openParentheses, "Expected `(`");
             auto statement_if = m_allocator.alloc<nodeIfStatement>();
             if (auto expr = parseExpression()) {
@@ -349,9 +353,9 @@ class Parser {
             auto statement = m_allocator.alloc<StatementNode>();
             statement->var = statement_if;
             return statement;
-        } else {
-            return {};
         }
+
+        return {};
     }
 
     std::optional<ProgramNode> parseProgram() {

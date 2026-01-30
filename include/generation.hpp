@@ -133,13 +133,44 @@ class Generator {
         return m_output.str();
     }
 
-    void generate_Scope(const nodeScope* scope)
+    void generate_scope(const nodeScope* scope)
     {
         begin_scope();
         for (const StatementNode* stmt : scope->statements) {
             generateStatement(stmt);
         }
         end_scope();
+    }
+
+    void generate_if_predicate(const nodeIfPredicate* predicate,const std::string& end_label) {
+
+        struct predicateVisitor {
+            Generator& m_generator;
+            const std::string& end_label;
+
+            void operator()(const nodeIfPredicateElif* elif) const
+            {
+                m_generator.generateExpression(elif->expression);
+                m_generator.pop("rax");
+                const std::string label = m_generator.create_label();
+                m_generator.m_output << "    test rax, rax\n";
+                m_generator.m_output << "    jz " << label <<"\n";
+                m_generator.generate_scope(elif->scope);
+                m_generator.m_output << "    jmp " << end_label << "\n";
+                if (elif->ifPredicate.has_value()) {
+                    m_generator.m_output << label << ":\n";
+                    m_generator.generate_if_predicate(elif->ifPredicate.value(), end_label);
+                }
+            }
+
+            void operator()(const nodeIfPredicateElse* _else) const
+            {
+                m_generator.generate_scope(_else->scope);
+            }
+        };
+
+        predicateVisitor visitor{.m_generator = *this, .end_label = end_label};
+        std::visit(visitor, predicate->predicate);
     }
 
     void generateStatement(const StatementNode* stmt) {
@@ -174,17 +205,22 @@ class Generator {
 
             void operator()(const nodeScope* scope) const
             {
-                m_generator.generate_Scope(scope);
+                m_generator.generate_scope(scope);
             }
 
             void operator()(const nodeIfStatement* statement_if) const {
                 m_generator.generateExpression(statement_if->expression);
                 m_generator.pop("rax");
-                std::string label = m_generator.create_label();
+                const std::string label = m_generator.create_label();
                 m_generator.m_output << "    test rax, rax\n";
                 m_generator.m_output << "    jz " << label <<"\n";
-                m_generator.generate_Scope(statement_if->scope);
+                m_generator.generate_scope(statement_if->scope);
                 m_generator.m_output << label << ":\n";
+                if (statement_if->ifPredicate.has_value()) {
+                    const std::string end_label = m_generator.create_label();
+                    m_generator.generate_if_predicate(statement_if->ifPredicate.value(), end_label);
+                    m_generator.m_output << end_label << ":\n";
+                }
             }
         };
         StatementVisitor visitor{.m_generator = *this};
