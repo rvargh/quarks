@@ -1,11 +1,13 @@
 assign y = (10 - 2 * 3) / 2;
 assign z = 0;
-assign x = 1;
+assign x = 5;
 
-if(1) {
-exit(69);
+
+if(0) {
+    x = 14;
 } elif(0) {
-exit(68);
+    x = 2;
 } else {
-exit(45);
+    x = 3;
 }
+exit(x);

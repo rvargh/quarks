@@ -6,6 +6,7 @@ $$
         \text{exit}([\text{Expression}]); \\
         \text{assign}\space\text{identifier} = [
         \text{Expression}];\\
+        \text{identifier} = [\text{Expression}]\\
         \text{if} ([\text{Expression}])[\text{Scope}]
         \text{[IfPredicate]}\\
         \{[\text{Scope}]^*\}

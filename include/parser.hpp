@@ -88,8 +88,13 @@ struct nodeIfStatement {
     std::optional<nodeIfPredicate*> ifPredicate;
 };
 
+struct nodeStatementAssign {
+    Token identifier;
+    ExpressionNode* expression {};
+};
+
 struct StatementNode {
-    std::variant<StatementExitNode*, LetStatementNode*,nodeScope* ,nodeIfStatement*> var;
+    std::variant<StatementExitNode*, LetStatementNode*,nodeScope* ,nodeIfStatement*,nodeStatementAssign*> var;
 };
 
 struct ProgramNode {
@@ -320,6 +325,23 @@ class Parser {
             auto* statement = m_allocator.alloc<StatementNode>();
             statement->var = statement_let;
             return statement;
+        }
+
+        if (peek().has_value() && peek().value().type == TokenType::identifier
+                && peek(1).has_value() && peek(1).value().type == TokenType::equals) {
+            auto* assign = m_allocator.alloc<nodeStatementAssign>();
+            assign->identifier = eat();
+            eat();
+            if (const auto expression = parseExpression()) {
+                assign->expression = expression.value();
+            } else {
+                std::cerr << "Expected Expression" <<std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            try_consume(TokenType::semicolon,"Expected semicolon");
+            auto stmt = m_allocator.emplace<StatementNode>(assign);
+            return stmt;
         }
 
         if (peek().has_value() && peek().value().type == TokenType::open_curly) {

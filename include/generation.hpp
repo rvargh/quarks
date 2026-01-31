@@ -215,12 +215,30 @@ class Generator {
                 m_generator.m_output << "    test rax, rax\n";
                 m_generator.m_output << "    jz " << label <<"\n";
                 m_generator.generate_scope(statement_if->scope);
+                std::optional<std::string> end_label;
+                if (statement_if->ifPredicate.has_value()) {
+                    end_label = m_generator.create_label();
+                    m_generator.m_output << "    jmp " << end_label.value() << "\n";
+                }
                 m_generator.m_output << label << ":\n";
                 if (statement_if->ifPredicate.has_value()) {
-                    const std::string end_label = m_generator.create_label();
-                    m_generator.generate_if_predicate(statement_if->ifPredicate.value(), end_label);
-                    m_generator.m_output << end_label << ":\n";
+                    m_generator.generate_if_predicate(statement_if->ifPredicate.value(), end_label.value());
+                    m_generator.m_output << end_label.value() << ":\n";
                 }
+            }
+
+            void operator()(const nodeStatementAssign* assign) const {
+                const auto it = std::ranges::find_if(m_generator.m_vars, [&](const Variables& variables) {
+                    return variables.name == assign->identifier.value.value();
+                });
+
+                if (it == m_generator.m_vars.end()) {
+                    std::cerr << "Undeclared identifier: " << assign->identifier.value.value() << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                m_generator.generateExpression(assign->expression);
+                m_generator.pop("rax");
+                m_generator.m_output << "    mov [rsp + " << (m_generator.m_stack_size - it->stack_location - 1) * 8 << "], rax\n";
             }
         };
         StatementVisitor visitor{.m_generator = *this};
