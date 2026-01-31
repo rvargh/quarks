@@ -16,13 +16,11 @@ class Generator {
             void operator()(const TermIdentifierNode* id) const {
 
                 const auto it = ranges::find_if(
-                    m_generator.m_vars,
-                    [&](const Variables& variables) {
-                           return variables.name == id->identifier.value.value();
-                       });
+                    m_generator.m_vars, [&](const Variables& variables) {
+                        return variables.name == id->identifier.value.value();
+                    });
 
-                if (it  == m_generator.m_vars.end())
-                {
+                if (it == m_generator.m_vars.end()) {
                     std::cerr << "Undeclared identifier: "
                               << id->identifier.value.value() << std::endl;
                     exit(EXIT_FAILURE);
@@ -40,7 +38,7 @@ class Generator {
             void operator()(const TermIntLiteralNode* it) const {
 
                 m_generator.m_output << "    mov rax, "
-                                    << it->int_literals.value.value() << "\n";
+                                     << it->int_literals.value.value() << "\n";
                 m_generator.push("rax");
             }
 
@@ -97,7 +95,7 @@ class Generator {
         };
 
         binaryExpressionVisitor visitor{.m_generator = *this};
-        std::visit(visitor,bns->ops);
+        std::visit(visitor, bns->ops);
     }
 
     void generateExpression(const ExpressionNode* expression) {
@@ -133,8 +131,7 @@ class Generator {
         return m_output.str();
     }
 
-    void generate_scope(const nodeScope* scope)
-    {
+    void generate_scope(const nodeScope* scope) {
         begin_scope();
         for (const StatementNode* stmt : scope->statements) {
             generateStatement(stmt);
@@ -142,29 +139,29 @@ class Generator {
         end_scope();
     }
 
-    void generate_if_predicate(const nodeIfPredicate* predicate,const std::string& end_label) {
+    void generate_if_predicate(const nodeIfPredicate* predicate,
+                               const std::string& end_label) {
 
         struct predicateVisitor {
             Generator& m_generator;
             const std::string& end_label;
 
-            void operator()(const nodeIfPredicateElif* elif) const
-            {
+            void operator()(const nodeIfPredicateElif* elif) const {
                 m_generator.generateExpression(elif->expression);
                 m_generator.pop("rax");
                 const std::string label = m_generator.create_label();
                 m_generator.m_output << "    test rax, rax\n";
-                m_generator.m_output << "    jz " << label <<"\n";
+                m_generator.m_output << "    jz " << label << "\n";
                 m_generator.generate_scope(elif->scope);
                 m_generator.m_output << "    jmp " << end_label << "\n";
                 if (elif->ifPredicate.has_value()) {
                     m_generator.m_output << label << ":\n";
-                    m_generator.generate_if_predicate(elif->ifPredicate.value(), end_label);
+                    m_generator.generate_if_predicate(elif->ifPredicate.value(),
+                                                      end_label);
                 }
             }
 
-            void operator()(const nodeIfPredicateElse* _else) const
-            {
+            void operator()(const nodeIfPredicateElse* _else) const {
                 m_generator.generate_scope(_else->scope);
             }
         };
@@ -181,19 +178,19 @@ class Generator {
             void operator()(const LetStatementNode* stmt_let) const {
 
                 const auto it = ranges::find_if(
-                    m_generator.m_vars,
-                    [&](const Variables& variables) {
-                       return variables.name == stmt_let->identifier.value.value();
-                   });
+                    m_generator.m_vars, [&](const Variables& variables) {
+                        return variables.name ==
+                               stmt_let->identifier.value.value();
+                    });
                 if (it != m_generator.m_vars.cend()) {
                     std::cerr << "Identifier already used: "
                               << stmt_let->identifier.value.value()
                               << std::endl;
                     exit(EXIT_FAILURE);
                 }
-                m_generator.m_vars.push_back({
-                    Variables{.name = stmt_let->identifier.value.value(),.stack_location = m_generator.m_stack_size}
-                });
+                m_generator.m_vars.push_back(
+                    {Variables{.name = stmt_let->identifier.value.value(),
+                               .stack_location = m_generator.m_stack_size}});
                 m_generator.generateExpression(stmt_let->expression);
             }
             void operator()(const StatementExitNode* stmt_exit) const {
@@ -203,8 +200,7 @@ class Generator {
                 m_generator.m_output << "    syscall\n";
             }
 
-            void operator()(const nodeScope* scope) const
-            {
+            void operator()(const nodeScope* scope) const {
                 m_generator.generate_scope(scope);
             }
 
@@ -213,32 +209,40 @@ class Generator {
                 m_generator.pop("rax");
                 const std::string label = m_generator.create_label();
                 m_generator.m_output << "    test rax, rax\n";
-                m_generator.m_output << "    jz " << label <<"\n";
+                m_generator.m_output << "    jz " << label << "\n";
                 m_generator.generate_scope(statement_if->scope);
                 std::optional<std::string> end_label;
                 if (statement_if->ifPredicate.has_value()) {
                     end_label = m_generator.create_label();
-                    m_generator.m_output << "    jmp " << end_label.value() << "\n";
+                    m_generator.m_output << "    jmp " << end_label.value()
+                                         << "\n";
                 }
                 m_generator.m_output << label << ":\n";
                 if (statement_if->ifPredicate.has_value()) {
-                    m_generator.generate_if_predicate(statement_if->ifPredicate.value(), end_label.value());
+                    m_generator.generate_if_predicate(
+                        statement_if->ifPredicate.value(), end_label.value());
                     m_generator.m_output << end_label.value() << ":\n";
                 }
             }
 
             void operator()(const nodeStatementAssign* assign) const {
-                const auto it = std::ranges::find_if(m_generator.m_vars, [&](const Variables& variables) {
-                    return variables.name == assign->identifier.value.value();
-                });
+                const auto it = std::ranges::find_if(
+                    m_generator.m_vars, [&](const Variables& variables) {
+                        return variables.name ==
+                               assign->identifier.value.value();
+                    });
 
                 if (it == m_generator.m_vars.end()) {
-                    std::cerr << "Undeclared identifier: " << assign->identifier.value.value() << std::endl;
+                    std::cerr << "Undeclared identifier: "
+                              << assign->identifier.value.value() << std::endl;
                     exit(EXIT_FAILURE);
                 }
                 m_generator.generateExpression(assign->expression);
                 m_generator.pop("rax");
-                m_generator.m_output << "    mov [rsp + " << (m_generator.m_stack_size - it->stack_location - 1) * 8 << "], rax\n";
+                m_generator.m_output
+                    << "    mov [rsp + "
+                    << (m_generator.m_stack_size - it->stack_location - 1) * 8
+                    << "], rax\n";
             }
         };
         StatementVisitor visitor{.m_generator = *this};
@@ -256,8 +260,8 @@ class Generator {
         size_t stack_location;
     };
 
-    std::vector<Variables> m_vars {};
-    std::vector<size_t> m_scopes {};
+    std::vector<Variables> m_vars{};
+    std::vector<size_t> m_scopes{};
 
     void push(const std::string& reg) {
         m_output << "    push " << reg << "\n";
@@ -269,9 +273,7 @@ class Generator {
         m_stack_size--;
     }
 
-    void begin_scope() {
-        m_scopes.push_back(m_vars.size());
-    }
+    void begin_scope() { m_scopes.push_back(m_vars.size()); }
 
     void end_scope() {
         const size_t pop_count = m_vars.size() - m_scopes.back();

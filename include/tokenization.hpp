@@ -1,6 +1,6 @@
 #pragma once
 
- using namespace std;
+using namespace std;
 
 enum class TokenType {
     exit,
@@ -22,22 +22,23 @@ enum class TokenType {
     else_,
 };
 
- inline std::optional<int> isBinaryOperator(const TokenType type) {
-     switch (type) {
-     case TokenType::substraction:
-     case TokenType::addition:
-         return 0;
-     case TokenType::multiplication:
-     case TokenType::division:
-         return 1;
-     default:
-         return nullopt;
-     }
- }
+inline std::optional<int> isBinaryOperator(const TokenType type) {
+    switch (type) {
+    case TokenType::substraction:
+    case TokenType::addition:
+        return 0;
+    case TokenType::multiplication:
+    case TokenType::division:
+        return 1;
+    default:
+        return nullopt;
+    }
+}
 
 struct Token {
     TokenType type;
     optional<std::string> value;
+    int line;
 };
 
 class Tokenizer {
@@ -47,6 +48,7 @@ class Tokenizer {
     vector<Token> tokenize() {
         string buffer;
         vector<Token> tokens;
+        int line_count = 0;
 
         while (peek().has_value()) {
             if (isalpha(peek().value())) {
@@ -56,19 +58,19 @@ class Tokenizer {
                 }
                 if (buffer == "exit") {
                     tokens.push_back(
-                        {.type = TokenType::exit, .value = buffer});
+                        {.type = TokenType::exit, .value = buffer, .line = line_count});
                     buffer.clear();
                 } else if (buffer == "assign") {
-                    tokens.push_back({.type = TokenType::assign});
+                    tokens.push_back({.type = TokenType::assign, .line = line_count});
                     buffer.clear();
                 } else if (buffer == "if") {
-                    tokens.push_back({.type = TokenType::if_});
+                    tokens.push_back({.type = TokenType::if_, .line = line_count});
                     buffer.clear();
                 } else if (buffer == "elif") {
-                    tokens.push_back({.type = TokenType::elif});
+                    tokens.push_back({.type = TokenType::elif, .line = line_count});
                     buffer.clear();
                 } else if (buffer == "else") {
-                    tokens.push_back({.type = TokenType::else_});
+                    tokens.push_back({.type = TokenType::else_, .line = line_count});
                     buffer.clear();
                 } else {
                     tokens.push_back(
@@ -77,28 +79,31 @@ class Tokenizer {
                 }
             } else if (peek().value() == '(') {
                 eat();
-                tokens.push_back({.type = TokenType::openParentheses});
+                tokens.push_back({.type = TokenType::openParentheses, .line = line_count});
             } else if (peek().value() == ')') {
                 eat();
-                tokens.push_back({.type = TokenType::closeParentheses});
+                tokens.push_back({.type = TokenType::closeParentheses, .line = line_count});
             } else if (isdigit(peek().value())) {
                 buffer.push_back(eat());
                 while (peek().has_value() && isdigit(peek().value())) {
                     buffer.push_back(eat());
                 }
                 tokens.push_back(
-                    {.type = TokenType::intLiteral, .value = buffer});
+                    {.type = TokenType::intLiteral, .value = buffer, .line = line_count});
                 buffer.clear();
-            } else if (peek().value() == '-' && peek(1).has_value() && peek(1).value() == '-') {
+            } else if (peek().value() == '-' && peek(1).has_value() &&
+                       peek(1).value() == '-') {
                 eat();
                 eat();
                 while (peek().has_value() && peek().value() != '\n') {
                     eat();
                 }
-            } else if (peek().value() == '-' && peek(1).has_value() && peek(1).value() == '*') {
+            } else if (peek().value() == '-' && peek(1).has_value() &&
+                       peek(1).value() == '*') {
                 eat();
                 eat();
-                while (peek().has_value() && peek().value() == '*' && peek().value() == '-') {
+                while (peek().has_value() && peek().value() == '*' &&
+                       peek().value() == '-') {
                     break;
                 }
                 if (peek().has_value()) {
@@ -107,35 +112,37 @@ class Tokenizer {
                 if (peek().has_value()) {
                     eat();
                 }
-            }
-            else if (peek().value() == ';') {
+            } else if (peek().value() == ';') {
                 eat();
-                tokens.push_back({.type = TokenType::semicolon});
+                tokens.push_back({.type = TokenType::semicolon, .line = line_count});
             } else if (peek().value() == '=') {
                 eat();
-                tokens.push_back({.type = TokenType::equals});
-            } else if (isspace(peek().value())) {
-                eat();
+                tokens.push_back({.type = TokenType::equals, .line = line_count});
             } else if (peek().value() == '+') {
                 eat();
-                tokens.push_back({.type = TokenType::addition});
+                tokens.push_back({.type = TokenType::addition, .line = line_count});
             } else if (peek().value() == '*') {
                 eat();
-                tokens.push_back({.type = TokenType::multiplication});
+                tokens.push_back({.type = TokenType::multiplication, .line = line_count});
             } else if (peek().value() == '-') {
                 eat();
-                tokens.push_back({.type = TokenType::substraction});
+                tokens.push_back({.type = TokenType::substraction, .line = line_count});
             } else if (peek().value() == '/') {
                 eat();
-                tokens.push_back({.type = TokenType::division});
+                tokens.push_back({.type = TokenType::division, .line = line_count});
             } else if (peek().value() == '{') {
                 eat();
-                tokens.push_back({.type = TokenType::open_curly});
+                tokens.push_back({.type = TokenType::open_curly, .line = line_count});
             } else if (peek().value() == '}') {
                 eat();
-                tokens.push_back({.type = TokenType::close_curly});
+                tokens.push_back({.type = TokenType::close_curly, .line = line_count});
+            } else if (peek().value() == '\n') {
+                eat();
+                line_count++;
+            } else if (std::isspace(peek().value())) {
+                eat();
             } else {
-                cerr << "You messed up!" << endl;
+                cerr << "Invalid token" << endl;
                 exit(EXIT_FAILURE);
             }
         }
