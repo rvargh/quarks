@@ -6,11 +6,11 @@
 
 int main(int argc, char* argv[]) {
 
-    // if (argc != 2) {
-    //     std::cerr << "Incorrect usage. Correct usage is ..\n";
-    //     std::cerr << "quarks <*.hy>\n";
-    //     return EXIT_FAILURE;
-    // }
+    if (argc != 2) {
+        std::cerr << "Incorrect usage. Correct usage is ..\n";
+        std::cerr << "quarks <*.qs>\n";
+        return EXIT_FAILURE;
+    }
 
     std::string content;
     /** inner scope to close the file once read is completed */
@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
         const char* filepath = "/home/darkknight/cpp/quarks/sample/test.qs";
         std::ifstream fileIn(filepath);
         if (!fileIn) {
-            std::cerr << "Failed to open kkkkfile \n";
+            std::cerr << "Failed to open file \n";
             return EXIT_FAILURE;
         }
 

@@ -3,7 +3,7 @@ $$
     [\text{prog}] &\to [\text{Statement}]^* \\
     [{Statement}] &\to
     \begin{cases}
-        \text{exit}([\text{Expression}]); \\
+        \text{exit}([\text{Expression}]); \\r
         \text{assign}\space\text{identifier} = [
         \text{Expression}];\\
         \text{identifier} = [\text{Expression}]\\
